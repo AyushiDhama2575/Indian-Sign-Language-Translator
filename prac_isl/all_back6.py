@@ -37,7 +37,7 @@ app.add_middleware(
 )
 
 # 3. Gemini Client Initialization
-client = genai.Client(api_key="Gemini API")
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 class TranslateRequest(BaseModel):
     text: str
