@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Sign Language (ISL) Translator & Agentic Engine</title>
+    <!-- Tailwind CSS for modern professional UI -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+    <!-- Header -->
+    <header class="gradient-bg text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-3xl font-extrabold tracking-wide">Indian Sign Language (ISL) Translator</h1>
+            <p class="text-sm mt-1 opacity-90">Real-time Computer Vision Detection & 22-Language AI Translation Engine</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+        <!-- SECTION 1: Webcam Real-Time ISL Prediction -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 flex flex-col items-center border border-gray-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-3 flex items-center">🎥 Live ISL Webcam Detection</h2>
+            
+            <!-- Controls -->
+            <div class="flex space-x-4 mb-4">
+                <button id="start-cam" onclick="startWebcam()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition transform active:scale-95">Start Camera</button>
+                <button id="stop-cam" onclick="stopWebcam()" class="bg-red-600 hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md transition transform active:scale-95 hidden">Stop Camera</button>
+            </div>
+
+            <div class="relative w-full max-w-md bg-black rounded-xl overflow-hidden shadow-inner flex justify-center items-center" style="height: 300px;">
+                <video id="webcam" autoplay playsinline muted class="absolute inset-0 w-full h-full object-cover hidden"></video>
+                <canvas id="canvas-output" class="absolute inset-0 w-full h-full object-cover"></canvas>
+                <div id="webcam-status" class="absolute text-white font-medium bg-black bg-opacity-70 px-4 py-2 rounded-lg backdrop-filter backdrop-blur-sm">Camera Offline</div>
+            </div>
+
+            <!-- Real-time Stats -->
+            <div class="w-full mt-4 bg-gray-50 p-3 rounded-xl border border-gray-200 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="font-semibold text-gray-600">Hand Detected:</span>
+                    <span id="hand-status" class="font-bold text-rose-500">No</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="font-semibold text-gray-600">Current Prediction:</span>
+                    <span id="pred-word" class="font-bold text-indigo-600">...</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="font-semibold text-gray-600">Confidence:</span>
+                    <span id="pred-conf" class="font-bold text-gray-800">0.0%</span>
+                </div>
+                <!-- Sequence Progress Bar -->
+                <div>
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Sequence Collection Buffer</span>
+                        <span id="seq-count">0 / 30</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div id="seq-progress" class="bg-indigo-600 h-2 rounded-full transition-all duration-150" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- On-Demand Gemini AI Sentence Generation & Sequence Section -->
+            <div class="w-full mt-3 bg-indigo-50 border border-indigo-100 p-3 rounded-xl space-y-2">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Detected Words Sequence:</h3>
+                    <button onclick="generateAISentence()" class="bg-purple-600 hover:bg-purple-700 text-white text-xs px-3 py-1.5 rounded-lg shadow transition transform active:scale-95 font-semibold flex items-center space-x-1">
+                        <span>🤖 Generate AI Sentence</span>
+                    </button>
+                </div>
+                <div id="detected-words-sequence" class="text-xs text-gray-700 font-mono bg-white p-2 rounded border">...</div>
+                
+                <div class="flex justify-between items-center pt-1 border-t border-indigo-100">
+                    <h3 class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Smart Sentence (Selected Language):</h3>
+                    <button onclick="speakGeminiSentence()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-2.5 py-1 rounded-lg shadow transition transform active:scale-95 flex items-center space-x-1" title="Speak sentence">
+                        <span>🔊 Speak</span>
+                    </button>
+                </div>
+                <p id="smart-sentence" class="text-gray-800 font-medium italic text-sm">...</p>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Text to ISL Video Translation -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 flex flex-col justify-between border border-gray-100">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">✍ Text to Sign Language Translator</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Enter Text / Sentence</label>
+                        <!-- Voice-to-Text Input Container -->
+                        <div class="relative flex items-center">
+                            <input type="text" id="translate-text" placeholder="e.g., Hello, you are good" class="w-full px-4 py-2.5 pr-12 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <button type="button" onclick="startVoiceInput()" class="absolute right-2 bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-lg shadow transition transform active:scale-95" title="Speak to type">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Choose Language (22 Indian Languages + English)</label>
+                        <select id="translate-lang" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                            <option value="English">English</option>
+                            <option value="Hindi">Hindi (हिंदी)</option>
+                            <option value="Telugu">Telugu (తెలుగు)</option>
+                            <option value="Tamil">Tamil (தமிழ்)</option>
+                            <option value="Bengali">Bengali (বাংলা)</option>
+                            <option value="Marathi">Marathi (मराठी)</option>
+                            <option value="Gujarati">Gujarati (ગુજરાતી)</option>
+                            <option value="Punjabi">Punjabi (ਪੰਜਾਬੀ)</option>
+                            <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
+                            <option value="Malayalam">Malayalam (മലയാളം)</option>
+                            <option value="Odia">Odia (ଓଡ଼ିଆ)</option>
+                            <option value="Assamese">Assamese (অসমীয়া)</option>
+                            <option value="Urdu">Urdu (اردو)</option>
+                            <option value="Sanskrit">Sanskrit (संस्कृतम्)</option>
+                            <option value="Nepali">Nepali (नेपाली)</option>
+                            <option value="Konkani">Konkani (कोंकणी)</option>
+                            <option value="Sindhi">Sindhi (سنڌي)</option>
+                            <option value="Dogri">Dogri (डोगरी)</option>
+                            <option value="Kashmiri">Kashmiri (कॉशुर)</option>
+                            <option value="Manipuri">Manipuri (মৈতৈলোন্)</option>
+                            <option value="Maithili">Maithili (मैथिली)</option>
+                            <option value="Santali">Santali (ᱥᱟᱱᱛᱟᱲᱤ)</option>
+                            <option value="Bodo">Bodo (बड़ो)</option>
+                        </select>
+                    </div>
+
+                    <button onclick="translateTextToISL()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl shadow-md transition transform active:scale-95">Translate to ISL Videos</button>
+                </div>
+
+                <!-- Video Player Container -->
+                <div class="mt-6">
+                    <h3 class="text-sm font-bold text-gray-700 mb-2">Sign Player (All Videos taken from Youtube channel: Indian Sign Language RKMVU-CBE)</h3>
+                    <div class="w-full bg-black rounded-xl overflow-hidden flex items-center justify-center shadow-inner relative" style="height: 240px;">
+                        <video id="isl-video-player" class="w-full h-full object-contain" controls></video>
+                        <p id="video-placeholder" class="text-gray-400 text-sm absolute">No video playing</p>
+                    </div>
+                    <div id="matched-words-display" class="mt-2.5 text-xs text-indigo-700 font-semibold"></div>
+                </div>
+            </div>
+
+            <div class="mt-6 text-center text-xs text-gray-400 border-t pt-4">
+                Powered by FastAPI, MediaPipe, TensorFlow & Google Gemini API
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Hidden video element for capturing frames -->
+    <video id="source-video" autoplay playsinline muted style="display:none;"></video>
+    <canvas id="source-canvas" style="display:none;"></canvas>
+
+    <script>
+        let ws = null;
+        let streaming = false;
+        let videoSequence = [];
+        let currentVideoIndex = 0;
+        let isProcessingFrame = false;
+        let latestDetectedWords = [];
+
+        const sourceVideo = document.getElementById('source-video');
+        const sourceCanvas = document.getElementById('source-canvas');
+        const ctxCanvas = sourceCanvas.getContext('2d');
+        const outputCanvas = document.getElementById('canvas-output');
+        const outputCtx = outputCanvas.getContext('2d');
+
+        async function startWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: { ideal: 30 } }, audio: false });
+                sourceVideo.srcObject = stream;
+                await sourceVideo.play();
+
+                sourceCanvas.width = 640;
+                sourceCanvas.height = 480;
+                outputCanvas.width = 640;
+                outputCanvas.height = 480;
+
+                ws = new WebSocket("ws://localhost:8000/ws/camera");
+
+                ws.onopen = () => {
+                    document.getElementById('webcam-status').style.display = 'none';
+                    document.getElementById('start-cam').classList.add('hidden');
+                    document.getElementById('stop-cam').classList.remove('hidden');
+                    streaming = true;
+                    sendFrames();
+                };
+
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === "prediction") {
+                        const img = new Image();
+                        img.onload = () => {
+                            outputCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+                            outputCtx.drawImage(img, 0, 0, outputCanvas.width, outputCanvas.height);
+                            isProcessingFrame = false;
+                        };
+                        img.src = data.annotated_image;
+
+                        const handStatus = document.getElementById('hand-status');
+                        if (data.hand_detected) {
+                            handStatus.textContent = "Yes";
+                            handStatus.className = "font-bold text-emerald-600";
+                        } else {
+                            handStatus.textContent = "No";
+                            handStatus.className = "font-bold text-rose-500";
+                        }
+
+                        document.getElementById('pred-word').textContent = data.prediction;
+                        document.getElementById('pred-conf').textContent = (data.confidence * 100).toFixed(1) + '%';
+                        
+                        const collecting = data.collecting;
+                        const seqLen = data.sequence_length;
+                        document.getElementById('seq-count').textContent = `${collecting} / ${seqLen}`;
+                        document.getElementById('seq-progress').style.width = `${(collecting / seqLen) * 100}%`;
+                        
+                        if (data.words && data.words.length > 0) {
+                            latestDetectedWords = data.words;
+                            document.getElementById('detected-words-sequence').textContent = latestDetectedWords.join(" ➔ ");
+                        }
+                    }
+                };
+
+                ws.onclose = () => {
+                    stopWebcam();
+                };
+
+            } catch (err) {
+                alert("Webcam access error: " + err.message);
+            }
+        }
+
+        function sendFrames() {
+            if (!streaming || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            if (!isProcessingFrame) {
+                isProcessingFrame = true;
+                ctxCanvas.drawImage(sourceVideo, 0, 0, sourceCanvas.width, sourceCanvas.height);
+                const frameData = sourceCanvas.toDataURL('image/jpeg', 0.6);
+
+                const selectedLanguage = document.getElementById('translate-lang').value;
+
+                ws.send(JSON.stringify({
+                    type: "frame",
+                    image: frameData,
+                    language: selectedLanguage
+                }));
+            }
+
+            requestAnimationFrame(sendFrames);
+        }
+
+        function stopWebcam() {
+            streaming = false;
+            isProcessingFrame = false;
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            if (sourceVideo.srcObject) {
+                sourceVideo.srcObject.getTracks().forEach(track => track.stop());
+                sourceVideo.srcObject = null;
+            }
+            document.getElementById('start-cam').classList.remove('hidden');
+            document.getElementById('stop-cam').classList.add('hidden');
+            document.getElementById('webcam-status').style.display = 'block';
+            document.getElementById('webcam-status').textContent = "Camera Offline";
+            outputCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+        }
+
+        // On-Demand AI Sentence Generation via FastAPI POST route
+        async function generateAISentence() {
+            if (!latestDetectedWords || latestDetectedWords.length === 0) {
+                alert("No words detected yet to generate sentence!");
+                return;
+            }
+
+            const selectedLanguage = document.getElementById('translate-lang').value;
+            document.getElementById('smart-sentence').textContent = "Generating AI sentence...";
+
+            try {
+                const response = await fetch('http://localhost:8000/generate-sentence-ai', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ words: latestDetectedWords, language: selectedLanguage })
+                });
+
+                if (!response.ok) throw new Error("Failed to generate sentence");
+
+                const data = await response.json();
+                document.getElementById('smart-sentence').textContent = data.sentence;
+            } catch (err) {
+                alert("Error: " + err.message);
+                document.getElementById('smart-sentence').textContent = latestDetectedWords.join(" ");
+            }
+        }
+
+        // Voice-to-Text Speech Recognition Function
+        function startVoiceInput() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                alert("Speech Recognition is not supported in your browser. Please use Google Chrome.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            const selectedLang = document.getElementById('translate-lang').value;
+            
+            const langMap = {
+                "English": "en-IN", "Hindi": "hi-IN", "Telugu": "te-IN", "Tamil": "ta-IN",
+                "Bengali": "bn-IN", "Marathi": "mr-IN", "Gujarati": "gu-IN", "Punjabi": "pa-IN",
+                "Kannada": "kn-IN", "Malayalam": "ml-IN", "Odia": "or-IN", "Assamese": "as-IN", "Urdu": "ur-PK"
+            };
+
+            recognition.lang = langMap[selectedLang] || "en-IN";
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            const inputField = document.getElementById('translate-text');
+            inputField.placeholder = "Listening... Speak now!";
+
+            recognition.onresult = (event) => {
+                inputField.value = event.results[0][0].transcript;
+                inputField.placeholder = "e.g., Hello, you are good";
+            };
+
+            recognition.onerror = (event) => {
+                alert("Voice recognition error: " + event.error);
+                inputField.placeholder = "e.g., Hello, you are good";
+            };
+
+            recognition.onend = () => {
+                inputField.placeholder = "e.g., Hello, you are good";
+            };
+
+            recognition.start();
+        }
+
+        // Text-to-Speech Function for Gemini Smart Sentence
+        function speakGeminiSentence() {
+            const sentenceText = document.getElementById('smart-sentence').textContent.trim();
+            
+            if (!sentenceText || sentenceText === "...") {
+                alert("No sentence available to speak yet!");
+                return;
+            }
+
+            if (!('speechSynthesis' in window)) {
+                alert("Text-to-Speech is not supported in your browser.");
+                return;
+            }
+
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(sentenceText);
+            const selectedLang = document.getElementById('translate-lang').value;
+            
+            const langMap = {
+                "English": "en-IN", "Hindi": "hi-IN", "Telugu": "te-IN", "Tamil": "ta-IN",
+                "Bengali": "bn-IN", "Marathi": "mr-IN", "Gujarati": "gu-IN", "Punjabi": "pa-IN",
+                "Kannada": "kn-IN", "Malayalam": "ml-IN", "Odia": "or-IN", "Assamese": "as-IN", "Urdu": "ur-PK"
+            };
+
+            utterance.lang = langMap[selectedLang] || "en-IN";
+            utterance.rate = 0.9;
+            utterance.pitch = 1.0;
+
+            window.speechSynthesis.speak(utterance);
+        }
+        async function translateTextToISL() {
+            const text = document.getElementById('translate-text').value.trim();
+            const language = document.getElementById('translate-lang').value;
+
+            if (!text) {
+                alert("Please enter some text to translate!");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:8000/translate-isl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text, language: language })
+                });
+
+                if (!response.ok) {
+                    const errDetail = await response.json();
+                    throw new Error(errDetail.detail || "Translation failed");
+                }
+
+                const data = await response.json();
+                videoSequence = data.matched_sequence;
+                currentVideoIndex = 0;
+
+                const wordsDisplay = document.getElementById('matched-words-display');
+                if (videoSequence.length > 0) {
+                    wordsDisplay.textContent = `Matched Sequence (${language}): ` + videoSequence.map(v => v.word).join(" ➔ ");
+                    playNextVideo();
+                } else {
+                    wordsDisplay.textContent = "No matching sign videos found in storage.";
+                    document.getElementById('video-placeholder').style.display = 'block';
+                }
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            }
+        }
+
+        function playNextVideo() {
+            const player = document.getElementById('isl-video-player');
+            const placeholder = document.getElementById('video-placeholder');
+
+            if (currentVideoIndex < videoSequence.length) {
+                placeholder.style.display = 'none';
+                player.style.display = 'block';
+                player.src = videoSequence[currentVideoIndex].stream_url;
+                player.play();
+                currentVideoIndex++;
+                player.onended = () => {
+                    playNextVideo();
+                };
+            } else {
+                player.style.display = 'none';
+                placeholder.style.display = 'block';
+                placeholder.textContent = "Playback Finished";
+            }
+        }
+   </script>
+</body>
+</html>
